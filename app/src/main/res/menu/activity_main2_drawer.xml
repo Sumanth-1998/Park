@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="activity_main2.xml">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_home"
+            android:icon="@drawable/ic_location"
+            android:title="Parking Near New" />
+        <item
+            android:id="@+id/public_place_parking"
+            android:icon="@drawable/ic_location"
+            android:title="Public Place Parking" />
+        <item
+            android:id="@+id/current_booking"
+            android:icon="@drawable/ic_timelapse"
+            android:title="Current Booking" />
+        <item
+            android:id="@+id/payment"
+            android:icon="@drawable/ic_payment"
+            android:title="Payment" />
+        <item
+            android:id="@+id/history"
+            android:icon="@drawable/ic_history_black_24dp"
+            android:title="History" />
+        <item
+            android:id="@+id/refer_and_earn"
+            android:icon="@drawable/ic_share"
+            android:title="Refer and Earn" />
+        <item
+            android:id="@+id/logout"
+            android:icon="@drawable/ic_logout"
+            android:title="Logout" />
+        <item
+            android:id="@+id/switch_owner"
+            android:icon="@drawable/ic_switch"
+            android:title="Switch to Owner" />
+    </group>
+
+    <item android:title="Communicate">
+        <menu>
+            <item
+                android:id="@+id/support"
+                android:icon="@drawable/ic_help"
+                android:title="Support" />
+            <item
+                android:id="@+id/about_us"
+                android:icon="@drawable/ic_hearing"
+                android:title="About Us" />
+        </menu>
+    </item>
+
+</menu>

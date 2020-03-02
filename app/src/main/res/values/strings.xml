@@ -1,0 +1,32 @@
+<resources>
+    <string name="app_name">Park In n Charge</string>
+    <string name="facebook_application_id">2663440670435127</string>
+    <string name="fb_login_protocol_scheme">fb2663440670435127</string>
+    <string name="title_activity_maps">Map</string>
+    <string name="posts">Posts</string>
+    <string name="profile">Profile</string>
+    <string name="logout">logout</string>
+
+    <string name="fragment_profile">Profile</string>
+    <string name="fragment_posts">Posts</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="title_activity_main2">Main2Activity</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="nav_header_title">Android Studio</string>
+    <string name="nav_header_subtitle">android.studio@android.com</string>
+    <string name="nav_header_desc">Navigation header</string>
+    <string name="action_settings">Settings</string>
+
+    <string name="menu_home">Home</string>
+    <string name="public_place_parking">Public Place Parking</string>
+    <string name="current_booking">Current Booking</string>
+    <string name="payment">Payment</string>
+    <string name="history">History</string>
+    <string name="refer_and_earn">Refer and Earn</string>
+    <string name="switch_owner">Switch to Owner</string>
+    <string name="support">Support</string>
+    <string name="about_us">About Us</string>
+</resources>
