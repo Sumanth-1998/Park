@@ -1,0 +1,56 @@
+{
+  "project_info": {
+    "project_number": "826524099366",
+    "firebase_url": "https://parkin-n-charge.firebaseio.com",
+    "project_id": "parkin-n-charge",
+    "storage_bucket": "parkin-n-charge.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:826524099366:android:215cf2ae30f6e5be3517e7",
+        "android_client_info": {
+          "package_name": "com.parkinncharge.parkinncharge"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "826524099366-cbncas807uvbhr8ueb05a2qc71p4vc65.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.parkinncharge.parkinncharge",
+            "certificate_hash": "2676e3ce50b215bf4174e66dda2a3ebb4330d79d"
+          }
+        },
+        {
+          "client_id": "826524099366-m633ia09c6k0trcd2vo6i64krmvshcdj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.parkinncharge.parkinncharge",
+            "certificate_hash": "b868ec8c82f70819f4bad374e50923f8735f6116"
+          }
+        },
+        {
+          "client_id": "826524099366-9cvv85ojc0idsdi3j4n2vp9kkpo160fv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqPrHqXUh3XlQ44sAiALxH7aMuPMA_gLM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "826524099366-9cvv85ojc0idsdi3j4n2vp9kkpo160fv.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

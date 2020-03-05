@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.text.format.DateFormat;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.TimePicker;
 
 import androidx.annotation.NonNull;
@@ -15,29 +16,20 @@ import androidx.fragment.app.DialogFragment;
 import java.util.Calendar;
 import java.util.Date;
 
-public class Time_Picker_Fragment extends DialogFragment implements TimePickerDialog.OnTimeSetListener {
+public class Time_Picker_Fragment extends DialogFragment  implements TimePickerDialog.OnTimeSetListener{
 
-    int hours,mins;
+
+    //int hours,mins;
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
+
         Calendar cal=Calendar.getInstance();
         int hour=cal.get(Calendar.HOUR_OF_DAY);
         int min=cal.get(Calendar.MINUTE);
-        return new TimePickerDialog(getActivity(),this,hour,min, DateFormat.is24HourFormat(getActivity()));
+        return new TimePickerDialog(getActivity(), (TimePickerDialog.OnTimeSetListener)getActivity(), hour, min, DateFormat.is24HourFormat(getActivity()));
     }
 
     @Override
     public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
-        this.hours=hourOfDay;
-        this.mins=minute;
-
-
-    }
-    public int gethour()
-    {
-        return hours;
-    }
-    public int getmins()
-    {
-        return mins;
+        //TextView startTime1=(TextView)
     }
 }

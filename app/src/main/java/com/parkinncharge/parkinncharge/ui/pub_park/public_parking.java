@@ -1,5 +1,6 @@
 package com.parkinncharge.parkinncharge.ui.pub_park;
 
+import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.app.TimePickerDialog;
 import android.os.Bundle;
@@ -12,7 +13,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.DatePicker;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.TimePicker;
@@ -36,8 +40,11 @@ import com.google.android.libraries.places.widget.listener.PlaceSelectionListene
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.parkinncharge.parkinncharge.Main2Activity;
 import com.parkinncharge.parkinncharge.R;
 import com.parkinncharge.parkinncharge.Time_Picker_Fragment;
+
+import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,37 +55,60 @@ import java.util.Map;
 import static android.view.View.VISIBLE;
 import static com.facebook.FacebookSdk.getApplicationContext;
 
-public class public_parking extends DialogFragment implements AdapterView.OnItemSelectedListener, TimePickerDialog.OnTimeSetListener {
+public class public_parking extends Fragment implements AdapterView.OnItemSelectedListener {
     private static final String TAG = "public_parking";
 
     private PublicViewModel publicViewModel;
     private FirebaseFirestore db;
-    TextView spaces_available;
-    TextView startTime1;
+    TextView spaces_available,howLong,toTextView,fromTextView;
+    TextView startTime1,totalCost,cost;
+    EditText startDate;
+    ImageButton calendarButton,timeButton;
     Map<String, Long> malls;
-    int count = 0;
+    TimePickerDialog tpick;
+    DatePickerDialog dpick;
+    Spinner hourSpinner,minSpinner;
+    ArrayList<String> hoursRem,minrem;
+    int count = 0,hrsSet=0,minSet=0,countHrsSpinner=0,countMinSpinner=0;
     View root;//=(TextView) view.findViewById(R.id.space_available);
     private int mins,hours;
+    int remHour,remMin;
     //TextView spaces_available;
     private static Handler myHandler=null;
+    Button calcfare;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        publicViewModel =
-                ViewModelProviders.of(this).get(PublicViewModel.class);
+        publicViewModel = ViewModelProviders.of(this).get(PublicViewModel.class);
         root = inflater.inflate(R.layout.public_parking, container, false);
         startTime1 = (TextView) root.findViewById(R.id.startTime2);
-        //
-        myHandler = new Handler() {
-            public void handleMessage(Message msg) {
-                final int what = msg.what;
-                startTime1.setText("Kothi");
-            }
-        };
+        calendarButton=(ImageButton) root.findViewById(R.id.calendarButton);
+        startDate=(EditText) root.findViewById(R.id.startDate);
+        timeButton=(ImageButton) root.findViewById(R.id.timeButton);
+        howLong=(TextView) root.findViewById(R.id.howLong);
+        toTextView=(TextView) root.findViewById(R.id.toTextView);
+        fromTextView=(TextView) root.findViewById(R.id.from_text_view);
+        hourSpinner=(Spinner) root.findViewById(R.id.hourSpinner);
+        minSpinner=(Spinner) root.findViewById(R.id.minuteSpinner);
+        calcfare=(Button) root.findViewById(R.id.calcFare);
+        cost=(TextView) root.findViewById(R.id.cost);
+        totalCost=(TextView) root.findViewById(R.id.totalCost);
+
+        howLong.setVisibility(View.INVISIBLE);
+        hourSpinner.setVisibility(View.INVISIBLE);
+        minSpinner.setVisibility(View.INVISIBLE);
+
         malls = new HashMap<>();
         Spinner spinner = (Spinner) root.findViewById(R.id.spinner);
         spinner.setOnItemSelectedListener(this);
+        hourSpinner.setOnItemSelectedListener(this);
+        minSpinner.setOnItemSelectedListener(this);
+
         ArrayList<String> mall_names = new ArrayList<String>();
+        hoursRem = new ArrayList<>();
+        minrem = new ArrayList<>();
+
+
         ;
         mall_names.add("Select you place");
 
@@ -107,69 +137,263 @@ public class public_parking extends DialogFragment implements AdapterView.OnItem
         //Log.d("Malls",malls.toString());
 
         //Log.d("ArrayList",""+mall_names.toString());
+        startTime1.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showTime();
+            }
+        });
+
+        timeButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showTime();
+            }
+        });
+
+        startDate.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showCalendar();
+            }
+        });
+
+        calendarButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showCalendar();
+            }
+        });
+
+        calcfare.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(((String)hourSpinner.getSelectedItem())=="Hours" || ((String)minSpinner.getSelectedItem())=="Minutes")
+                {
+                    Toast.makeText(getActivity(), "Please fill all fields", Toast.LENGTH_SHORT).show();
+                }
+                else{
+                    totalCost.setVisibility(VISIBLE);
+                    double fare=calculate_fare();
+                    cost.setText(Double.toString(fare));
+                    cost.setVisibility(VISIBLE);
+                }
+            }
+        });
+
 
 
         return root;
     }
 
+
+    public double calculate_fare(){
+        double hrsparked,minsparked,tot_time_parked,price_min=0.35,total_cost;
+        hrsparked=Double.parseDouble((String)hourSpinner.getSelectedItem());
+        minsparked=Double.parseDouble((String)minSpinner.getSelectedItem());
+        tot_time_parked=hrsparked*60+minsparked;
+        total_cost=tot_time_parked*price_min;
+        return  total_cost;
+
+    }
+
+    public void showTime()
+    {
+        hoursRem.clear();
+        minrem.clear();
+        hoursRem.add("Hours");
+        minrem.add("Minutes");
+        minrem.add(Integer.toString(0));
+        minrem.add(Integer.toString(30));
+        Calendar cal = Calendar.getInstance();
+        int hour = cal.get(Calendar.HOUR_OF_DAY);
+        int min = cal.get(Calendar.MINUTE);
+        tpick = new TimePickerDialog(getActivity(),
+                new TimePickerDialog.OnTimeSetListener() {
+                    @Override
+                    public void onTimeSet(TimePicker tp, int sHour, int sMinute) {
+                        String ampm="AM",prefix="";int hour=sHour,hourInDay=24;
+                        String min=Integer.toString(sMinute);
+                        hrsSet=sHour;
+                        minSet=sMinute;
+                        if(sMinute<10)
+                            min="0"+sMinute;
+                        if(sHour>=12)
+                        {
+                            ampm="PM";
+                        }
+                        if(sHour!=12)
+                            hour=sHour%12;
+
+                        if(hour<10)
+                            prefix="0";
+                        startTime1.setText(prefix+hour + ":" + min+" "+ampm);
+                        if(sMinute>=30) {
+                            remHour = hourInDay - sHour-1;
+                            remMin = 0;
+
+
+                        }
+                        else
+                        {
+                            remHour=hourInDay-sHour-1;
+                            remMin=30;
+
+                        }
+                        howLong.setVisibility(VISIBLE);
+                        calcfare.setVisibility(VISIBLE);
+                        showHourMinSpinner();
+                        for(int i=0;i<=remHour;i++)
+                        {
+                            hoursRem.add(Integer.toString(i));
+                        }
+                        Toast.makeText(getActivity(), remHour+"+"+remMin, Toast.LENGTH_SHORT).show();
+                    }
+                }, hour, min, true);
+
+        Log.d("HoursAdapter",hoursRem+"");
+        Log.d("MinutesAdapter",minrem+"");
+        Toast.makeText(getActivity(), "before", Toast.LENGTH_SHORT).show();
+        tpick.show();
+
+    }
+
+
+    public void showHourMinSpinner(){
+        ArrayAdapter<String> hourAdapter;
+
+        hourAdapter = new ArrayAdapter<String>(getContext(), android.R.layout.simple_spinner_item, hoursRem);
+        hourAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        hourSpinner.setAdapter(hourAdapter);
+
+        ArrayAdapter<String> minAdapter;
+        minAdapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, minrem);
+        minAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        minSpinner.setAdapter(minAdapter);
+
+        hourSpinner.setVisibility(View.VISIBLE);
+        minSpinner.setVisibility(View.VISIBLE);
+    }
+
+    public void showCalendar()
+    {
+        Calendar cal = Calendar.getInstance();
+        int date=cal.get(Calendar.DATE);
+        int month=cal.get(Calendar.MONTH);
+        int year=cal.get(Calendar.YEAR);
+        dpick = new DatePickerDialog(getActivity(),
+                new DatePickerDialog.OnDateSetListener() {
+                    @Override
+                    public void onDateSet(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
+                        toTextView.setVisibility(VISIBLE);
+                        startTime1.setVisibility(VISIBLE);
+                        timeButton.setVisibility(VISIBLE);
+                        startDate.setText(dayOfMonth + "/" + (monthOfYear + 1) + "/" + year);
+                    }
+                }, year, month, date);
+        dpick.getDatePicker().setMinDate(System.currentTimeMillis());
+        dpick.show();
+    }
+
     @Override
     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
         spaces_available = (TextView) root.findViewById(R.id.space_available);
+        switch (parent.getId()) {
+            case R.id.spinner: if (++count > 1) {
+                                    /*spaces_available.setVisibility(View.INVISIBLE);
+                                    fromTextView.setVisibility(View.INVISIBLE);
+                                    startDate.setVisibility(View.INVISIBLE);
+                                    calendarButton.setVisibility(View.INVISIBLE);
+                                    toTextView.setVisibility(View.INVISIBLE);
+                                    startTime1.setVisibility(View.INVISIBLE);
+                                    timeButton.setVisibility(View.INVISIBLE);
+                                    howLong.setVisibility(View.INVISIBLE);
+                                    hourSpinner.setVisibility(View.INVISIBLE);
+                                    minSpinner.setVisibility(View.INVISIBLE);
+                                    calcfare.setVisibility(View.INVISIBLE);
+                                    totalCost.setVisibility(View.INVISIBLE);
+                                    cost.setVisibility(View.INVISIBLE);*/
+                                if (position != 0) {
+                                    spaces_available.setVisibility(VISIBLE);
+                                    fromTextView.setVisibility(VISIBLE);
+                                    startDate.setVisibility(VISIBLE);
+                                    calendarButton.setVisibility(VISIBLE);
+                                    Log.d("Position", "" + position);
+                                    String item = (String) parent.getItemAtPosition(position);
+                                    Log.d("Item", "" + malls.get(item));
+                                    spaces_available.setText("No of Slots Available: " + malls.get(item));
+                                } else {
+                                onNothingSelected(parent);
+                                spaces_available.setVisibility(View.INVISIBLE);
+                                fromTextView.setVisibility(View.INVISIBLE);
+                                startDate.setText("");
+                                startDate.setVisibility(View.INVISIBLE);
+                                calendarButton.setVisibility(View.INVISIBLE);
+                                toTextView.setVisibility(View.INVISIBLE);
+                                startTime1.setText("");
+                                startTime1.setVisibility(View.INVISIBLE);
+                                timeButton.setVisibility(View.INVISIBLE);
+                                howLong.setVisibility(View.INVISIBLE);
+                                hourSpinner.setVisibility(View.INVISIBLE);
+                                minSpinner.setVisibility(View.INVISIBLE);
+                                calcfare.setVisibility(View.INVISIBLE);
+                                totalCost.setVisibility(View.INVISIBLE);
+                                cost.setVisibility(View.INVISIBLE);
 
-        if (++count > 1) {
-            if (position != 0) {
-                spaces_available.setVisibility(VISIBLE);
-                Log.d("Position", "" + position);
-                String item = (String) parent.getItemAtPosition(position);
-                Log.d("Item", "" + malls.get(item));
-                spaces_available.setText("No of Slots Available: " + malls.get(item));
+                                }
+                            }
+                            break;
+            case R.id.hourSpinner:
+                                    //String timestamp=startTime1.getText().toString();
+                                    totalCost.setVisibility((View.INVISIBLE));
+                                    cost.setVisibility(View.INVISIBLE);
+                                    if (++countHrsSpinner > 1) {
+                                        if (position != 0) {
+                                            int item=Integer.parseInt((String)parent.getItemAtPosition(position));
+                                            if (hrsSet + item == 23 && minSet >= 30) {
+                                                Toast.makeText(getActivity(), "Reached Here", Toast.LENGTH_SHORT).show();
+                                                minrem.remove("30");
+                                                ArrayAdapter<String> minAdapter;
+                                                minAdapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, minrem);
+                                                minAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                                                minSpinner.setAdapter(minAdapter);
+                                            }
+                                            else{
 
-                startTime1.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        DialogFragment timePicker = new public_parking();
-                        timePicker.show(getChildFragmentManager(), "time picker");
-                        
-                        Toast.makeText(getActivity(), "before", Toast.LENGTH_SHORT).show();
-                    }
-                });
-            } else {
-                onNothingSelected(parent);
-                spaces_available.setVisibility(View.INVISIBLE);
-            }
-        }
-        //spaces_available.setVisibility(View.VISIBLE);
+                                                if(!minrem.contains("30"))
 
+                                                    minrem.add("30");
+                                            }
+                                        }
+                                        else{
+                                            Toast.makeText(getActivity(),"Please Select Duration of Park",Toast.LENGTH_LONG).show();
+
+                                        }
+                                    }
+                                    break;
+
+            case R.id.minuteSpinner:totalCost.setVisibility((View.INVISIBLE));
+                                    cost.setVisibility(View.INVISIBLE);
+                                    if (++countMinSpinner > 1) {
+                                        if (position == 0) {
+                                            Toast.makeText(getActivity(), "Please Select Duration of Park", Toast.LENGTH_LONG).show();
+
+                                        }
+                                    }
+                            }
 
     }
+
 
     @Override
     public void onNothingSelected(AdapterView<?> parent) {
         Toast.makeText(getContext(), "Please Select the Place", Toast.LENGTH_LONG).show();
     }
 
-    @Override
-    public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
 
-        Log.d("Hours", "" + hourOfDay);
-        Log.d("Mins", "" + minute);
-        hours=hourOfDay;
-        mins=minute;
-        Toast.makeText(getActivity(), ""+hours+":"+minute, Toast.LENGTH_SHORT).show();
-        Log.d(TAG, "onTimeSet: " + hours);
-        myHandler.sendEmptyMessage(1);
-        Toast.makeText(getActivity(), startTime1.getText().toString(), Toast.LENGTH_SHORT).show();;
 
-    }
 
-    public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
-        Calendar cal = Calendar.getInstance();
-        int hour = cal.get(Calendar.HOUR_OF_DAY);
-        int min = cal.get(Calendar.MINUTE);
-        //startTime1 = (TextView) root.findViewById(R.id.startTime2);
-        //startTime1.setText("Hello");
-        return new TimePickerDialog(getActivity(), this, hour, min, DateFormat.is24HourFormat(getActivity()));
-    }
+
 
 
 }

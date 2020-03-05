@@ -29,4 +29,6 @@
     <string name="switch_owner">Switch to Owner</string>
     <string name="support">Support</string>
     <string name="about_us">About Us</string>
+    <string name="date">Date</string>
+
 </resources>
