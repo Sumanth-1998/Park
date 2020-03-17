@@ -1,12 +1,11 @@
 package com.parkinncharge.parkinncharge.ui.pub_park;
 
+import android.app.Activity;
 import android.app.DatePickerDialog;
-import android.app.Dialog;
 import android.app.TimePickerDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Message;
-import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -22,40 +21,32 @@ import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.Toast;
 
-import androidx.annotation.Nullable;
 import androidx.annotation.NonNull;
-import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
 
-import com.google.android.gms.common.api.Status;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
-import com.google.android.libraries.places.api.Places;
-import com.google.android.libraries.places.api.model.Place;
-import com.google.android.libraries.places.api.net.PlacesClient;
-import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
-import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
-import com.parkinncharge.parkinncharge.Main2Activity;
+import com.google.firestore.v1.StructuredQuery;
+import com.parkinncharge.parkinncharge.Payment_Activity;
 import com.parkinncharge.parkinncharge.R;
-import com.parkinncharge.parkinncharge.Time_Picker_Fragment;
+import com.razorpay.Checkout;
+import com.razorpay.PaymentResultListener;
 
-import org.w3c.dom.Text;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
-import static android.view.View.VISIBLE;
-import static com.facebook.FacebookSdk.getApplicationContext;
 
-public class public_parking extends Fragment implements AdapterView.OnItemSelectedListener {
+import static android.view.View.VISIBLE;
+
+public class public_parking extends Fragment implements AdapterView.OnItemSelectedListener, PaymentResultListener {
     private static final String TAG = "public_parking";
 
     private PublicViewModel publicViewModel;
@@ -69,16 +60,21 @@ public class public_parking extends Fragment implements AdapterView.OnItemSelect
     DatePickerDialog dpick;
     Spinner hourSpinner,minSpinner;
     ArrayList<String> hoursRem,minrem;
+    Checkout checkout;
     int count = 0,hrsSet=0,minSet=0,countHrsSpinner=0,countMinSpinner=0;
     View root;//=(TextView) view.findViewById(R.id.space_available);
     private int mins,hours;
     int remHour,remMin;
+    Calendar testcal;
     //TextView spaces_available;
     private static Handler myHandler=null;
-    Button calcfare;
+    Button calcfare,payButton;
+    String time,book_date;
+
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
+        //RazorpayClient razorpayClient = new RazorpayClient("key_id", "key_secret");
         publicViewModel = ViewModelProviders.of(this).get(PublicViewModel.class);
         root = inflater.inflate(R.layout.public_parking, container, false);
         startTime1 = (TextView) root.findViewById(R.id.startTime2);
@@ -93,11 +89,12 @@ public class public_parking extends Fragment implements AdapterView.OnItemSelect
         calcfare=(Button) root.findViewById(R.id.calcFare);
         cost=(TextView) root.findViewById(R.id.cost);
         totalCost=(TextView) root.findViewById(R.id.totalCost);
-
+        payButton=(Button) root.findViewById(R.id.payButton);
         howLong.setVisibility(View.INVISIBLE);
         hourSpinner.setVisibility(View.INVISIBLE);
         minSpinner.setVisibility(View.INVISIBLE);
-
+        checkout=new Checkout();
+        checkout.setKeyID("rzp_test_Xk70LwijqMfKDb");
         malls = new HashMap<>();
         Spinner spinner = (Spinner) root.findViewById(R.id.spinner);
         spinner.setOnItemSelectedListener(this);
@@ -175,13 +172,35 @@ public class public_parking extends Fragment implements AdapterView.OnItemSelect
                 else{
                     totalCost.setVisibility(VISIBLE);
                     double fare=calculate_fare();
-                    cost.setText(Double.toString(fare));
+                    cost.setText(String.format("%.2f",fare));
                     cost.setVisibility(VISIBLE);
+                    payButton.setVisibility(VISIBLE);
                 }
             }
         });
 
+        payButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Toast.makeText(getActivity(),startTime1.getText().toString() , Toast.LENGTH_SHORT).show();
+                if(startTime1.getText().toString().compareTo("")!=0) {
+                    double amount = Double.parseDouble(cost.getText().toString());
+                    amount = amount * 100;
+                    //startPayment(amount);
+                    Intent payIntent = new Intent(getActivity(), Payment_Activity.class);
+                    payIntent.putExtra("amount", amount);
+                    payIntent.putExtra("type","Public Parking");
+                    payIntent.putExtra("booked_date",book_date);
+                    payIntent.putExtra("time",time);
+                    startActivity(payIntent);
+                }
+                else
+                {
+                    Toast.makeText(getActivity(), "Please fill all fields", Toast.LENGTH_SHORT).show();
+                }
+            }
 
+        });
 
         return root;
     }
@@ -193,6 +212,7 @@ public class public_parking extends Fragment implements AdapterView.OnItemSelect
         minsparked=Double.parseDouble((String)minSpinner.getSelectedItem());
         tot_time_parked=hrsparked*60+minsparked;
         total_cost=tot_time_parked*price_min;
+        payButton.setVisibility(VISIBLE);
         return  total_cost;
 
     }
@@ -212,44 +232,60 @@ public class public_parking extends Fragment implements AdapterView.OnItemSelect
                 new TimePickerDialog.OnTimeSetListener() {
                     @Override
                     public void onTimeSet(TimePicker tp, int sHour, int sMinute) {
-                        String ampm="AM",prefix="";int hour=sHour,hourInDay=24;
-                        String min=Integer.toString(sMinute);
-                        hrsSet=sHour;
-                        minSet=sMinute;
-                        if(sMinute<10)
-                            min="0"+sMinute;
-                        if(sHour>=12)
-                        {
-                            ampm="PM";
-                        }
-                        if(sHour!=12)
-                            hour=sHour%12;
 
-                        if(hour<10)
-                            prefix="0";
-                        startTime1.setText(prefix+hour + ":" + min+" "+ampm);
-                        if(sMinute>=30) {
-                            remHour = hourInDay - sHour-1;
-                            remMin = 0;
+                        //testcal.set(Calendar.DATE,)
+                        testcal.set(Calendar.HOUR_OF_DAY,sHour);
+                        testcal.set(Calendar.MINUTE,sMinute);
+                        if(testcal.getTime().compareTo(cal.getTime())>0) {
+                            String ampm = "AM", prefix = "";
+                            int hour = sHour, hourInDay = 24;
+                            String min = Integer.toString(sMinute);
+                            hrsSet = sHour;
+                            minSet = sMinute;
+                            if (sMinute < 10)
+                                min = "0" + sMinute;
+                            if (sHour >= 12) {
+                                ampm = "PM";
+                            }
+                            if (sHour != 12)
+                                hour = sHour % 12;
+
+                            if (hour < 10)
+                                prefix = "0";
+                            time=prefix + hour + ":" + min + " " + ampm;
+                            startTime1.setText(time);
+
+                            if (sMinute >= 30) {
+                                remHour = hourInDay - sHour - 1;
+                                remMin = 0;
 
 
+                            } else {
+                                remHour = hourInDay - sHour - 1;
+                                remMin = 30;
+
+                            }
+                            howLong.setVisibility(VISIBLE);
+                            calcfare.setVisibility(VISIBLE);
+                            showHourMinSpinner();
+                            for (int i = 0; i <= remHour; i++) {
+                                hoursRem.add(Integer.toString(i));
+                            }
+                            Toast.makeText(getActivity(), remHour + "+" + remMin, Toast.LENGTH_SHORT).show();
                         }
                         else
                         {
-                            remHour=hourInDay-sHour-1;
-                            remMin=30;
-
+                            Toast.makeText(getActivity(), "Invalid Time", Toast.LENGTH_SHORT).show();
+                            howLong.setVisibility(View.INVISIBLE);
+                            hourSpinner.setVisibility(View.INVISIBLE);
+                            minSpinner.setVisibility(View.INVISIBLE);
+                            calcfare.setVisibility(View.INVISIBLE);
+                            totalCost.setVisibility(View.INVISIBLE);
+                            cost.setVisibility(View.INVISIBLE);
+                            payButton.setVisibility(View.INVISIBLE);
                         }
-                        howLong.setVisibility(VISIBLE);
-                        calcfare.setVisibility(VISIBLE);
-                        showHourMinSpinner();
-                        for(int i=0;i<=remHour;i++)
-                        {
-                            hoursRem.add(Integer.toString(i));
-                        }
-                        Toast.makeText(getActivity(), remHour+"+"+remMin, Toast.LENGTH_SHORT).show();
                     }
-                }, hour, min, true);
+                }, hour, min, false);
 
         Log.d("HoursAdapter",hoursRem+"");
         Log.d("MinutesAdapter",minrem+"");
@@ -257,6 +293,18 @@ public class public_parking extends Fragment implements AdapterView.OnItemSelect
         tpick.show();
 
     }
+    @Override
+    public void onPaymentSuccess(String s) {
+        Toast.makeText(getActivity(), "Payment Success", Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onPaymentError(int i, String s) {
+        Toast.makeText(getActivity(), "Payment Failed", Toast.LENGTH_SHORT).show();
+
+    }
+
+
 
 
     public void showHourMinSpinner(){
@@ -281,14 +329,22 @@ public class public_parking extends Fragment implements AdapterView.OnItemSelect
         int date=cal.get(Calendar.DATE);
         int month=cal.get(Calendar.MONTH);
         int year=cal.get(Calendar.YEAR);
+
+        testcal= Calendar.getInstance();
+
         dpick = new DatePickerDialog(getActivity(),
                 new DatePickerDialog.OnDateSetListener() {
                     @Override
                     public void onDateSet(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
+                        startTime1.setText("");
                         toTextView.setVisibility(VISIBLE);
                         startTime1.setVisibility(VISIBLE);
                         timeButton.setVisibility(VISIBLE);
+                        testcal.set(Calendar.DATE,dayOfMonth);
+                        testcal.set(Calendar.MONTH,monthOfYear);
+                        testcal.set(Calendar.YEAR,year);
                         startDate.setText(dayOfMonth + "/" + (monthOfYear + 1) + "/" + year);
+                        book_date=dayOfMonth + "/" + (monthOfYear + 1) + "/" + year;
                     }
                 }, year, month, date);
         dpick.getDatePicker().setMinDate(System.currentTimeMillis());
@@ -339,7 +395,7 @@ public class public_parking extends Fragment implements AdapterView.OnItemSelect
                                 calcfare.setVisibility(View.INVISIBLE);
                                 totalCost.setVisibility(View.INVISIBLE);
                                 cost.setVisibility(View.INVISIBLE);
-
+                                payButton.setVisibility(View.INVISIBLE);
                                 }
                             }
                             break;
@@ -347,6 +403,7 @@ public class public_parking extends Fragment implements AdapterView.OnItemSelect
                                     //String timestamp=startTime1.getText().toString();
                                     totalCost.setVisibility((View.INVISIBLE));
                                     cost.setVisibility(View.INVISIBLE);
+                                    payButton.setVisibility(View.INVISIBLE);
                                     if (++countHrsSpinner > 1) {
                                         if (position != 0) {
                                             int item=Integer.parseInt((String)parent.getItemAtPosition(position));
@@ -374,6 +431,7 @@ public class public_parking extends Fragment implements AdapterView.OnItemSelect
 
             case R.id.minuteSpinner:totalCost.setVisibility((View.INVISIBLE));
                                     cost.setVisibility(View.INVISIBLE);
+                                    payButton.setVisibility(View.INVISIBLE);
                                     if (++countMinSpinner > 1) {
                                         if (position == 0) {
                                             Toast.makeText(getActivity(), "Please Select Duration of Park", Toast.LENGTH_LONG).show();
@@ -389,10 +447,6 @@ public class public_parking extends Fragment implements AdapterView.OnItemSelect
     public void onNothingSelected(AdapterView<?> parent) {
         Toast.makeText(getContext(), "Please Select the Place", Toast.LENGTH_LONG).show();
     }
-
-
-
-
 
 
 

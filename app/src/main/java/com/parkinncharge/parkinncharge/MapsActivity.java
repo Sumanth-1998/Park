@@ -80,31 +80,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         mMap.setMyLocationEnabled(true);
         locationManager=(LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-        locationListener =new LocationListener() {
-            @Override
-            public void onLocationChanged(Location location) {
 
-                //LatLng userLoc=new LatLng(location.getLatitude(),location.getLongitude());
-                //mMap.addMarker(new MarkerOptions().position(userLoc).title("Your Location").snippet("Hi Hello").icon(BitmapDescriptorFactory.fromResource(R.drawable.home)));
-
-
-            }
-
-            @Override
-            public void onStatusChanged(String provider, int status, Bundle extras) {
-
-            }
-
-            @Override
-            public void onProviderEnabled(String provider) {
-
-            }
-
-            @Override
-            public void onProviderDisabled(String provider) {
-
-            }
-        };
 
         if (Build.VERSION.SDK_INT<24)
         {
@@ -117,9 +93,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             {
                 locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,0,0,locationListener);
                 Location lastknownLocation=locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                LatLng userLoc=new LatLng(lastknownLocation.getLatitude(),lastknownLocation.getLongitude());
-                mMap.addMarker(new MarkerOptions().position(userLoc).title("Your Location").icon(BitmapDescriptorFactory.fromResource(R.drawable.home)));
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLoc,15));
+                //LatLng userLoc=new LatLng(lastknownLocation.getLatitude(),lastknownLocation.getLongitude());
+               // mMap.addMarker(new MarkerOptions().position(userLoc).title("Your Location").icon(BitmapDescriptorFactory.fromResource(R.drawable.home)));
+                //mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLoc,15));
             }
         }
 
@@ -128,6 +104,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private void addmarkers()
     {
         //Log.d("Reached","here");
+        mMap.clear();
         db.collection("users")
                 .get()
                 .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {

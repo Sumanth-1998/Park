@@ -11,8 +11,13 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
+import androidx.viewpager.widget.ViewPager;
 
+import com.google.android.material.tabs.TabLayout;
 import com.parkinncharge.parkinncharge.R;
+import com.parkinncharge.parkinncharge.tabpageAdapter;
+
+import static androidx.fragment.app.FragmentStatePagerAdapter.BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT;
 
 public class current_booking extends Fragment {
 
@@ -23,13 +28,11 @@ public class current_booking extends Fragment {
         currentBookingView =
                 ViewModelProviders.of(this).get(CurrentBookingView.class);
         View root = inflater.inflate(R.layout.current_booking, container, false);
-        final TextView textView = root.findViewById(R.id.text_send);
-        currentBookingView.getText().observe(this, new Observer<String>() {
-            @Override
-            public void onChanged(@Nullable String s) {
-                textView.setText(s);
-            }
-        });
+        TabLayout tabLayout=(TabLayout)root.findViewById(R.id.tabs);
+        ViewPager pager=(ViewPager)root.findViewById(R.id.viewpager);
+        tabpageAdapter TabPageAdapter=new tabpageAdapter(getChildFragmentManager(),BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT);
+        pager.setAdapter(TabPageAdapter);
+        tabLayout.setupWithViewPager(pager);
         return root;
     }
 }
