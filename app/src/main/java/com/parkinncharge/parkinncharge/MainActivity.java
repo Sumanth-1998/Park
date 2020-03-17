@@ -88,8 +88,12 @@ public class MainActivity extends AppCompatActivity{
                 AuthUI.getInstance()
                         .createSignInIntentBuilder()
                         .setAvailableProviders(providers).setTheme(R.style.LoginTheme).setLogo(R.drawable.parkinncharge_logo)
+                        .setTosAndPrivacyPolicyUrls(
+                                "https://example.com/terms.html",
+                                "https://example.com/privacy.html")
                         .build(),
                 RC_SIGN_IN);
+
 
 
     }
